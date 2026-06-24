@@ -11,37 +11,60 @@ export default async function handler(req) {
     });
   }
 
-  const body = await req.json();
+  const { prompt, company_name, company_email } = await req.json();
 
-  // Convert Anthropic format to OpenRouter format
-  const orBody = {
-    model: 'anthropic/claude-sonnet-4-5',
-    max_tokens: body.max_tokens || 1000,
-    messages: body.messages
-  };
+  const API_KEY = process.env.OPENROUTER_API_KEY;
+
+  // STEP 1: Research the company via web search
+  let companyInfo = '';
+  try {
+    const searchRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + API_KEY,
+        'HTTP-Referer': 'https://wildpixel-crm.vercel.app',
+        'X-Title': 'Wild Pixel CRM'
+      },
+      body: JSON.stringify({
+        model: 'perplexity/sonar',
+        max_tokens: 400,
+        messages: [{
+          role: 'user',
+          content: 'Research this company in 5-7 sentences: "' + company_name + '" ' + (company_email ? '(domain: ' + company_email.split('@')[1] + ')' : '') + '. Focus on: what they do, their recent projects, clients they work with, their scale and reputation. Be specific and factual.'
+        }]
+      })
+    });
+    const searchData = await searchRes.json();
+    companyInfo = searchData.choices?.[0]?.message?.content || '';
+  } catch(e) {
+    companyInfo = '';
+  }
+
+  // STEP 2: Write the personalized message using research
+  const finalPrompt = prompt + (companyInfo ? '\n\nCOMPANY RESEARCH (use these specific facts to personalize):\n' + companyInfo : '');
 
   const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + process.env.OPENROUTER_API_KEY,
+      'Authorization': 'Bearer ' + API_KEY,
       'HTTP-Referer': 'https://wildpixel-crm.vercel.app',
       'X-Title': 'Wild Pixel CRM'
     },
-    body: JSON.stringify(orBody)
+    body: JSON.stringify({
+      model: 'anthropic/claude-sonnet-4-5',
+      max_tokens: 1000,
+      messages: [{ role: 'user', content: finalPrompt }]
+    })
   });
 
   const data = await res.json();
 
-  // Convert OpenRouter response back to Anthropic format
-  const anthropicFormat = {
-    content: [{
-      type: 'text',
-      text: data.choices?.[0]?.message?.content || ''
-    }]
-  };
-
-  return new Response(JSON.stringify(anthropicFormat), {
+  return new Response(JSON.stringify({
+    content: [{ type: 'text', text: data.choices?.[0]?.message?.content || '' }],
+    research: companyInfo
+  }), {
     status: 200,
     headers: {
       'Content-Type': 'application/json',
