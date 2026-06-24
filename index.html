@@ -3,16 +3,672 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Wild Pixel CRM — Loading...</title>
-<script>
-// This file will be replaced with full CRM
-window.location.href = 'https://wildpixel-crm.vercel.app';
-</script>
+<title>Wild Pixel — Outreach CRM</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#080E1A;color:#E8EDF5;font-family:system-ui,sans-serif;font-size:13px;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:#0F1825}::-webkit-scrollbar-thumb{background:#1E2D45;border-radius:3px}
+.header{background:#0A1628;border-bottom:2px solid #E8B838;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.logo{font-weight:800;font-size:16px;letter-spacing:.05em}.logo span{color:#E8B838}
+.hstats{display:flex;gap:20px}.hs{text-align:center}.hs-v{font-size:18px;font-weight:800;color:#E8B838}.hs-l{font-size:9px;color:#5A7A9A;text-transform:uppercase;letter-spacing:.05em}
+.nav{background:#0F1825;border-bottom:1px solid #1E2D45;display:flex;padding:0 14px;flex-shrink:0}
+.nb{padding:10px 16px;background:none;border:none;color:#5A7A9A;font-size:12px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s}
+.nb.active{color:#E8B838;border-bottom-color:#E8B838}
+.layout{flex:1;display:flex;overflow:hidden}
+.list-col{width:340px;border-right:1px solid #1E2D45;display:flex;flex-direction:column;flex-shrink:0}
+.filters{padding:10px;border-bottom:1px solid #1E2D45;display:flex;flex-direction:column;gap:6px}
+.fi{background:#162034;border:1px solid #1E2D45;color:#E8EDF5;padding:5px 8px;border-radius:6px;font-size:11px;width:100%}
+.si{background:#162034;border:1px solid #1E2D45;color:#E8EDF5;padding:5px 8px;border-radius:6px;font-size:11px;flex:1}
+.leads{flex:1;overflow-y:auto}
+.lead-row{padding:10px 12px;border-bottom:1px solid #1E2D45;cursor:pointer;transition:background .1s}
+.lead-row:hover{background:#0F1825}.lead-row.active{background:#162034;border-left:3px solid #E8B838}
+.lr-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}
+.lr-name{font-weight:700;font-size:12px}
+.lr-prio{font-size:9px;font-weight:800;padding:1px 5px;border-radius:3px}
+.pA{background:rgba(46,204,113,.15);color:#2ECC71}.pB{background:rgba(74,158,255,.15);color:#4A9EFF}.pC{background:rgba(90,122,154,.15);color:#5A7A9A}
+.lr-meta{font-size:10px;color:#5A7A9A}
+.touches{display:flex;gap:2px;margin-top:4px}
+.t{width:14px;height:14px;border-radius:2px;font-size:8px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.t-done{background:#E8B838;color:#000}.t-due{background:rgba(231,76,60,.2);color:#E74C3C;border:1px solid #E74C3C}.t-pend{background:#162034;color:#5A7A9A;border:1px solid #1E2D45}
+.detail{flex:1;overflow-y:auto;padding:16px}
+.empty-state{height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;color:#5A7A9A}
+.section-label{font-size:10px;font-weight:700;color:#5A7A9A;text-transform:uppercase;letter-spacing:.07em;margin:14px 0 6px}
+.d-name{font-size:20px;font-weight:800;margin-bottom:2px}
+.d-meta{font-size:12px;color:#5A7A9A;margin-bottom:8px}
+.status-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px}
+.st-btn{padding:4px 10px;border-radius:4px;border:1px solid #1E2D45;font-size:11px;font-weight:600;cursor:pointer;background:#162034;color:#5A7A9A;transition:all .15s}
+.st-btn.active-new{background:rgba(90,122,154,.2);color:#5A7A9A;border-color:#5A7A9A}
+.st-btn.active-contacted{background:rgba(74,158,255,.2);color:#4A9EFF;border-color:#4A9EFF}
+.st-btn.active-replied{background:rgba(243,156,18,.2);color:#F39C12;border-color:#F39C12}
+.st-btn.active-meeting{background:rgba(155,89,182,.2);color:#9B59B6;border-color:#9B59B6}
+.st-btn.active-closed{background:rgba(46,204,113,.2);color:#2ECC71;border-color:#2ECC71}
+.st-btn.active-lost{background:rgba(231,76,60,.2);color:#E74C3C;border-color:#E74C3C}
+.gen-box{background:#0F1825;border:1px solid #1E2D45;border-radius:8px;padding:12px;margin-bottom:10px}
+.gen-top{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
+.ch-sel,.t-sel{background:#162034;border:1px solid #1E2D45;color:#E8EDF5;padding:5px 8px;border-radius:6px;font-size:11px}
+.btn{padding:6px 14px;border-radius:6px;border:none;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s}
+.btn-gold{background:#E8B838;color:#000}.btn-gold:hover{background:#f5c842}.btn-gold:disabled{background:#333;color:#666;cursor:not-allowed}
+.btn-sec{background:#162034;color:#E8EDF5;border:1px solid #1E2D45}.btn-sec:hover{border-color:#E8B838}
+.btn-sm{padding:4px 10px;font-size:11px}
+.msg-area{width:100%;background:#080E1A;border:1px solid #1E2D45;color:#E8EDF5;padding:10px;border-radius:6px;font-size:12px;line-height:1.6;resize:vertical;min-height:180px;font-family:inherit}
+.msg-area:focus{outline:none;border-color:#E8B838}
+.ai-status{font-size:11px;padding:7px 10px;border-radius:6px;margin-bottom:8px;display:none;font-weight:600}
+.ai-s{background:rgba(74,158,255,.1);color:#4A9EFF;border:1px solid rgba(74,158,255,.3)}
+.ai-w{background:rgba(232,184,56,.1);color:#E8B838;border:1px solid rgba(232,184,56,.3)}
+.ai-e{background:rgba(231,76,60,.1);color:#E74C3C;border:1px solid rgba(231,76,60,.3)}
+.notes-area{width:100%;background:#080E1A;border:1px solid #1E2D45;color:#E8EDF5;padding:8px;border-radius:6px;font-size:12px;line-height:1.5;resize:vertical;min-height:60px;font-family:inherit}
+.notes-area:focus{outline:none;border-color:#E8B838}
+.log-item{background:#0F1825;border:1px solid #1E2D45;border-radius:6px;padding:10px;margin-bottom:6px}
+.li-top{display:flex;justify-content:space-between;margin-bottom:4px}
+.li-touch{font-size:10px;font-weight:700;color:#E8B838}
+.li-date{font-size:10px;color:#5A7A9A}
+.li-body{font-size:11px;color:#B0C0D0;line-height:1.5;white-space:pre-wrap;max-height:80px;overflow:hidden;cursor:pointer}
+.li-body.exp{max-height:none}
+.dash-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.dash-card{background:#0F1825;border:1px solid #1E2D45;border-radius:8px;padding:14px;text-align:center}
+.dc-val{font-size:28px;font-weight:800;color:#E8B838}.dc-label{font-size:10px;color:#5A7A9A;margin-top:2px}
+.queue-item{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #1E2D45}
+.badge{display:inline-block;padding:1px 6px;border-radius:12px;font-size:9px;font-weight:700}
+.badge-event{background:rgba(155,89,182,.15);color:#B07FD6}
+.badge-auto{background:rgba(243,156,18,.15);color:#F39C12}
+.badge-prod{background:rgba(46,204,113,.15);color:#2ECC71}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#E8B838;color:#000;padding:8px 18px;border-radius:6px;font-weight:700;font-size:12px;z-index:999;display:none;pointer-events:none}
+.loading-screen{position:fixed;inset:0;background:#080E1A;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;z-index:100}
+.spinner{width:36px;height:36px;border:3px solid #1E2D45;border-top-color:#E8B838;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.row-btns{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+</style>
 </head>
-<body style="background:#080E1A;color:#E8EDF5;display:flex;align-items:center;justify-content:center;height:100vh;font-family:system-ui">
-<div style="text-align:center">
-  <div style="font-size:24px;font-weight:800;color:#E8B838">WILD PIXEL</div>
-  <div style="margin-top:8px;color:#5A7A9A">Outreach CRM · Loading...</div>
+<body>
+
+<div class="loading-screen" id="loader">
+  <div class="spinner"></div>
+  <div style="color:#5A7A9A;font-size:13px" id="loaderMsg">Подключение к Supabase...</div>
 </div>
+
+<div class="header">
+  <div>
+    <div class="logo">WILD <span>PIXEL</span> · Outreach CRM</div>
+    <div style="font-size:9px;color:#5A7A9A;margin-top:1px">AI анализирует каждую компанию · Supabase</div>
+  </div>
+  <div class="hstats">
+    <div class="hs"><div class="hs-v" id="hTotal">—</div><div class="hs-l">Всего</div></div>
+    <div class="hs"><div class="hs-v" id="hDone">—</div><div class="hs-l">Contacted</div></div>
+    <div class="hs"><div class="hs-v" id="hReply" style="color:#2ECC71">—</div><div class="hs-l">Replied</div></div>
+    <div class="hs"><div class="hs-v" id="hDue" style="color:#E74C3C">—</div><div class="hs-l">Follow-up</div></div>
+  </div>
+</div>
+
+<div class="nav">
+  <button class="nb active" onclick="switchTab('crm')">🏢 CRM</button>
+  <button class="nb" onclick="switchTab('dashboard')">📊 Дашборд</button>
+  <button class="nb" onclick="switchTab('logs')">📋 Все логи</button>
+</div>
+
+<div class="layout">
+  <div id="crmLayout" style="display:flex;width:100%;overflow:hidden">
+    <div class="list-col">
+      <div class="filters">
+        <input class="fi" placeholder="🔍 Поиск компании..." id="searchInput" oninput="filterLeads()">
+        <div style="display:flex;gap:6px">
+          <select class="si" id="segFilter" onchange="filterLeads()">
+            <option value="">Все сегменты</option>
+            <option value="event">Event Agency</option>
+            <option value="auto">Auto / Brand</option>
+            <option value="prod">Production</option>
+          </select>
+          <select class="si" id="regionFilter" onchange="filterLeads()">
+            <option value="">Все регионы</option>
+            <option value="UAE">UAE</option>
+            <option value="Saudi">Saudi</option>
+            <option value="Europe">Europe</option>
+            <option value="CIS">CIS</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:6px">
+          <select class="si" id="prioFilter" onchange="filterLeads()">
+            <option value="">Приоритет</option>
+            <option value="A">A</option><option value="B">B</option><option value="C">C</option>
+          </select>
+          <select class="si" id="statusFilter" onchange="filterLeads()">
+            <option value="">Все статусы</option>
+            <option value="new">New</option><option value="contacted">Contacted</option>
+            <option value="replied">Replied</option><option value="meeting">Meeting</option>
+            <option value="closed">Closed</option><option value="lost">Lost</option>
+          </select>
+        </div>
+        <div style="font-size:10px;color:#5A7A9A" id="countLabel">— компаний</div>
+      </div>
+      <div class="leads" id="leadsList"></div>
+    </div>
+    <div class="detail" id="detailPane">
+      <div class="empty-state">
+        <div style="font-size:40px">👈</div>
+        <div style="font-weight:600;font-size:14px">Выбери компанию</div>
+        <div style="font-size:11px;text-align:center;max-width:200px">AI проанализирует и напишет персональное сообщение от Wild Pixel</div>
+      </div>
+    </div>
+  </div>
+  <div id="dashLayout" style="display:none;flex:1;overflow-y:auto;padding:16px"></div>
+  <div id="logsLayout" style="display:none;flex:1;overflow-y:auto;padding:16px"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────────
+const SUPABASE_URL = 'https://joqfuvgyrralrnrgavwl.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_J_L9a6bJt4X31rYRZ-qZ_w_fAI32y1q';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Wild Pixel full context для AI
+const WP = `Wild Pixel Studio — full-cycle virtual production studio, Dubai (wildpixel.tv).
+TECH: LED Volume stage (20m arc LED wall, 16.5×45m hall), Unreal Engine 5 real-time rendering, motion capture (Xsens), green screen, live broadcast infrastructure (NDI, multi-cam), previz (Oculus).
+SERVICES: LED Stage Production, Virtual Production, Green Screen, Motion Capture, Live Broadcasts, Previz.
+CASES PORTFOLIO:
+- HyperLoop (feature film): 300m² LED (ceiling + side + main panel), custom spaceship locations, mocap, post-production
+- Inside Lapenko (YouTube, 10M+ subs): custom virtual scenes, LED + tracking, 1-week full delivery
+- Snow Queen (ice show): 70m² + 200m² screens in two locations, 4km² custom virtual world, 1 month
+- RenTV commercial: virtual production + LED, concept to shoot in 4 days
+- Reforum International Forum (live): 18hrs broadcast, 6 cameras, 6 virtual scenes, Unreal Engine
+- AFTP Live (CIS Film Producers): 8 cameras, mosys tracker, 4 custom scenes, 2-week prep
+- Music video Nigative: LED + Unreal + Vive tracker, 2-day concept-to-camera, 3-hour shoot day
+KEY ADVANTAGES vs competitors:
+- Only full-cycle virtual production studio in Dubai with large-format LED Volume
+- Real-time Unreal Engine = changes on set, no post-production delays
+- No location dependency = no weather, permits, travel costs
+- Fast turnaround: 2–7 days from brief to camera
+- Full crew included (no need to assemble separately)
+- Cost: significantly cheaper than flying to European virtual production studios ($15-25k/day just for studio)
+CONTACT: Daniil Artyomov, BD Lead | contact@wildpixel.tv | wildpixel.tv | +971 52 687 1613`;
+
+const SEG = {event:'Event Agency',auto:'Auto/Brand',prod:'Production'};
+const ST_LIST = ['new','contacted','replied','meeting','closed','lost'];
+const ST_NAME = {new:'New',contacted:'Contacted',replied:'Replied',meeting:'Meeting',closed:'Closed',lost:'Lost'};
+const DELAYS = [0,3,8,15];
+
+let allLeads=[], allLogs=[], filtered=[], selectedId=null, currentTab='crm';
+
+// ── INIT ─────────────────────────────────────────────────────
+async function init() {
+  setLoader('Подключение к Supabase...');
+  await loadLeads();
+  await loadLogs();
+  if (allLeads.length === 0) {
+    setLoader('Первый запуск: загружаю базу компаний...');
+    await seedCompanies();
+    await loadLeads();
+  }
+  document.getElementById('loader').style.display = 'none';
+  filterLeads();
+  updateStats();
+}
+
+function setLoader(msg){document.getElementById('loaderMsg').textContent=msg}
+
+async function loadLeads(){
+  const {data}=await sb.from('outreach_leads').select('*').order('priority').order('company_name');
+  if(data) allLeads=data;
+}
+async function loadLogs(){
+  const {data}=await sb.from('outreach_logs').select('*').order('created_at',{ascending:false}).limit(500);
+  if(data) allLogs=data;
+}
+
+// ── HELPERS ───────────────────────────────────────────────────
+function nextTouch(l){for(let t=1;t<=4;t++) if(!l[`touch${t}_sent_at`]) return t; return null}
+function touchDue(l){
+  const nt=nextTouch(l); if(!nt) return null;
+  if(nt===1) return new Date(0);
+  const p=new Date(l[`touch${nt-1}_sent_at`]); p.setDate(p.getDate()+DELAYS[nt-1]); return p;
+}
+function isOverdue(l){const d=touchDue(l); return d&&d<=new Date()}
+function daysLeft(l){const d=touchDue(l); if(!d) return null; return Math.ceil((d-new Date())/86400000)}
+
+function updateStats(){
+  document.getElementById('hTotal').textContent=allLeads.length;
+  document.getElementById('hDone').textContent=allLeads.filter(l=>l.status!=='new').length;
+  document.getElementById('hReply').textContent=allLeads.filter(l=>['replied','meeting','closed'].includes(l.status)).length;
+  const due=allLeads.filter(l=>isOverdue(l)&&!['closed','lost'].includes(l.status)).length;
+  document.getElementById('hDue').textContent=due;
+  document.getElementById('hDue').style.color=due>0?'#E74C3C':'#2ECC71';
+}
+
+// ── FILTER + RENDER LIST ──────────────────────────────────────
+function filterLeads(){
+  const q=document.getElementById('searchInput').value.toLowerCase();
+  const seg=document.getElementById('segFilter').value;
+  const region=document.getElementById('regionFilter').value;
+  const prio=document.getElementById('prioFilter').value;
+  const status=document.getElementById('statusFilter').value;
+  filtered=allLeads.filter(l=>{
+    if(q&&!l.company_name.toLowerCase().includes(q)) return false;
+    if(seg&&l.segment!==seg) return false;
+    if(region&&l.region!==region) return false;
+    if(prio&&l.priority!==prio) return false;
+    if(status&&l.status!==status) return false;
+    return true;
+  });
+  document.getElementById('countLabel').textContent=filtered.length+' компаний';
+  renderList();
+}
+
+function renderList(){
+  document.getElementById('leadsList').innerHTML=filtered.map(l=>{
+    const nt=nextTouch(l), days=daysLeft(l), ov=isOverdue(l)&&!['closed','lost'].includes(l.status);
+    return `<div class="lead-row${selectedId===l.id?' active':''}" onclick="selectLead('${l.id}')">
+      <div class="lr-top"><div class="lr-name">${l.company_name}</div><span class="lr-prio p${l.priority}">${l.priority}</span></div>
+      <div class="lr-meta">
+        <span class="badge badge-${l.segment}">${SEG[l.segment]}</span> ${l.region}
+        · <span style="color:${ov?'#E74C3C':'#5A7A9A'}">${ST_NAME[l.status]}</span>
+        ${ov&&nt?` · <b style="color:#E74C3C">Touch ${nt} сейчас!</b>`:''}
+        ${!ov&&days!==null&&days>=0?` · +${days}д`:''}
+        ${days===null?' · ✅':''}
+      </div>
+      <div class="touches">${[1,2,3,4].map(t=>{
+        const sent=l[`touch${t}_sent_at`],due=t===nt&&ov;
+        return `<div class="t ${sent?'t-done':due?'t-due':'t-pend'}">${t}</div>`;
+      }).join('')}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── SELECT + DETAIL ───────────────────────────────────────────
+function selectLead(id){selectedId=id; renderList(); renderDetail()}
+
+function renderDetail(){
+  const el=document.getElementById('detailPane');
+  const l=allLeads.find(x=>x.id===selectedId);
+  if(!l){el.innerHTML=`<div class="empty-state"><div style="font-size:40px">👈</div><div style="font-weight:600">Выбери компанию</div></div>`; return}
+  const nt=nextTouch(l), logs=allLogs.filter(lg=>lg.lead_id===l.id);
+  el.innerHTML=`
+    <div class="d-name">${l.company_name}</div>
+    <div class="d-meta">
+      <span class="badge badge-${l.segment}">${SEG[l.segment]}</span> ${l.region} · Приоритет <b style="color:#E8B838">${l.priority}</b>
+      ${l.contact_email?` · <a href="mailto:${l.contact_email}" style="color:#4A9EFF">${l.contact_email}</a>`:''}
+    </div>
+
+    <div class="section-label">Статус</div>
+    <div class="status-row">${ST_LIST.map(s=>`<button class="st-btn${l.status===s?' active-'+s:''}" onclick="changeStatus('${l.id}','${s}')">${ST_NAME[s]}</button>`).join('')}</div>
+
+    <div class="section-label">Касания</div>
+    <div class="touches" style="gap:6px;margin-bottom:14px">${[1,2,3,4].map(t=>{
+      const sent=l[`touch${t}_sent_at`],ch=l[`touch${t}_channel`],due=t===nt&&isOverdue(l);
+      return `<div style="text-align:center">
+        <div class="t ${sent?'t-done':due?'t-due':'t-pend'}" style="width:28px;height:28px;font-size:12px;margin:0 auto 3px">${t}</div>
+        <div style="font-size:9px;color:#5A7A9A">${sent?new Date(sent).toLocaleDateString('ru'):''}</div>
+        ${ch?`<div style="font-size:9px;color:#E8B838">${ch}</div>`:''}
+      </div>`;
+    }).join('')}</div>
+
+    ${nt?`
+    <div class="section-label">🤖 AI Генерация — Touch ${nt}</div>
+    <div class="gen-box">
+      <div class="gen-top">
+        <select class="ch-sel" id="chSel">
+          <option value="email">📧 Email</option>
+          <option value="whatsapp">💬 WhatsApp</option>
+          <option value="linkedin">🔗 LinkedIn</option>
+        </select>
+        <select class="t-sel" id="tSel">
+          ${[1,2,3,4].filter(t=>!l[`touch${t}_sent_at`]).map(t=>`<option value="${t}"${t===nt?' selected':''}>${t===nt?`Touch ${t} (следующий)`:`Touch ${t}`}</option>`).join('')}
+        </select>
+        <button class="btn btn-gold" id="genBtn" onclick="generateMsg('${l.id}')">🤖 Сгенерировать</button>
+      </div>
+      <div class="ai-status" id="aiStatus"></div>
+      <textarea class="msg-area" id="msgArea" placeholder="Нажми «Сгенерировать» — AI напишет персональное сообщение для ${l.company_name} с учётом их сегмента и специфики..."></textarea>
+      <div class="row-btns">
+        <button class="btn btn-sec btn-sm" onclick="doCopy()">📋 Копировать</button>
+        <button class="btn btn-gold btn-sm" onclick="markSent('${l.id}')">✅ Отправлено — записать</button>
+      </div>
+    </div>
+    `:`<div style="color:#2ECC71;font-size:13px;padding:10px 0;font-weight:600">✅ Все 4 касания выполнены!</div>`}
+
+    <div class="section-label">Заметки</div>
+    <textarea class="notes-area" id="notesArea" placeholder="Заметки о компании, разговоре, контакте...">${l.notes||''}</textarea>
+    <button class="btn btn-sec btn-sm" style="margin-top:6px" onclick="saveNotes('${l.id}')">💾 Сохранить</button>
+
+    ${logs.length>0?`
+    <div class="section-label">История касаний (${logs.length})</div>
+    ${logs.map(lg=>`<div class="log-item">
+      <div class="li-top">
+        <span class="li-touch">Touch ${lg.touch_number} · ${lg.channel}</span>
+        <span class="li-date">${new Date(lg.sent_at||lg.created_at).toLocaleDateString('ru')} ${new Date(lg.sent_at||lg.created_at).toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'})}</span>
+      </div>
+      <div class="li-body" onclick="this.classList.toggle('exp')">${(lg.message_text||'').substring(0,300)}${(lg.message_text||'').length>300?'...':''}</div>
+    </div>`).join('')}
+    `:''}
+  `;
+}
+
+// ── AI GENERATION ─────────────────────────────────────────────
+async function generateMsg(leadId){
+  const l=allLeads.find(x=>x.id===leadId); if(!l) return;
+  const touchSel=parseInt(document.getElementById('tSel')?.value)||nextTouch(l);
+  const channel=document.getElementById('chSel')?.value||'email';
+  const btn=document.getElementById('genBtn');
+  const area=document.getElementById('msgArea');
+  const statusEl=document.getElementById('aiStatus');
+
+  btn.disabled=true; btn.textContent='⏳ Генерирую...';
+  area.value='';
+  showAiStatus('searching',`🔍 Анализирую ${l.company_name}...`);
+
+  const TOUCH_GUIDE={
+    1:`Touch 1 (Day 0) — первый холодный контакт. Структура: 1) Observation — что конкретно заметили о их бизнесе/сегменте 2) Problem — их главная боль 3) Proof — Wild Pixel как решение с конкретным кейсом 4) Ask — один конкретный следующий шаг (не "let me know if interested"). НЕ начинать с "I hope this finds you well" или подобного.`,
+    2:`Touch 2 (Day 3) — follow-up с другого угла. НЕ повторяй Touch 1. Другая боль или другой кейс. Задай конкретный вопрос про их ближайший проект или задачу.`,
+    3:`Touch 3 (Day 8) — конкретный оффер. Предложи site visit / demo в студии без обязательств. Упомяни что студия свободна в ближайшие недели. Создай мягкую срочность.`,
+    4:`Touch 4 (Day 15) — breakup message. Очень короткий, без давления. "Последнее сообщение". Оставь дверь открытой. Обязательно добавь wildpixel.tv`
+  };
+
+  const CH_FORMAT={
+    email:`Деловой email на английском. Обязательно: Subject line (тема) + тело письма. Длина: 220-300 слов. Профессионально, конкретно.`,
+    whatsapp:`WhatsApp сообщение на английском. Без темы. Неформально, дружески, конкретно. Максимум 100-120 слов. Можно emoji если уместно.`,
+    linkedin:`LinkedIn InMail на английском. Без темы. Профессионально, кратко. 150-180 слов.`
+  };
+
+  const SEG_PAIN={
+    event:`Event Agency боли: клиенты требуют wow-эффект и уникальные впечатления на каждом ивенте; конкуренты предлагают похожие стандартные решения; высокая стоимость экзотических локаций; сложно удивить искушённую аудиторию. Wild Pixel решение: LED Volume создаёт любую среду — от космоса до пустыни — прямо в Дубае, быстро и с полным контролем.`,
+    auto:`Auto/Luxury Brand боли: автомобильные и продуктовые съёмки зависят от погоды, разрешений, логистики локаций; production cycle на launch video — 2-3 недели минимум; нет контроля над окружением; перелёт в европейские студии = $15-25k/день только студия. Wild Pixel решение: любой фон и свет, управляемая среда, turnaround 2-4 дня от брифа до съёмки.`,
+    prod:`Production House боли: клиенты всё чаще запрашивают virtual production; нет доступной LED Volume студии в UAE — летать в Европу дорого; нужно наращивать портфолио VP проектов; новая технология требует надёжного партнёра с опытом. Wild Pixel решение: единственная full-cycle VP студия в Дубае с LED Volume и командой Unreal Engine, уже сделали feature film, TV shows, commercials.`
+  };
+
+  const prompt=`You are Daniil Artyomov, BD Lead at Wild Pixel Studio. Write the outreach message in English.
+
+WILD PIXEL STUDIO (sender):
+${WP}
+
+TARGET COMPANY: "${l.company_name}"
+Segment: ${SEG[l.segment]} (${l.segment})
+Region: ${l.region}
+Email: ${l.contact_email||'—'}
+${l.notes?`Our notes about them: ${l.notes}`:''}
+
+SEGMENT PAIN POINTS TO ADDRESS:
+${SEG_PAIN[l.segment]}
+
+TASK: Write ${CH_FORMAT[channel]}
+${TOUCH_GUIDE[touchSel]}
+
+CRITICAL RULES:
+- Make the opening line specific to ${l.company_name} and their segment — show you know who they are
+- Reference a real Wild Pixel case that fits their needs (from the portfolio above)
+- Never be generic, never use corporate filler phrases
+- The reader should feel this was written specifically for them
+- Sign as: Daniil Artyomov | Wild Pixel Studio | wildpixel.tv | +971 52 687 1613
+
+Output ONLY the final message text, nothing else. No explanations, no meta-commentary.`;
+
+  try{
+    showAiStatus('writing','✍️ Пишу персональное сообщение...');
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,messages:[{role:'user',content:prompt}]})
+    });
+    if(!res.ok){const err=await res.text(); throw new Error(`API ${res.status}: ${err}`)}
+    const data=await res.json();
+    const text=data.content?.[0]?.text||'';
+    area.value=text;
+    hideAiStatus();
+    toast('🤖 Готово! Проверь и нажми «Отправлено»');
+  }catch(e){
+    showAiStatus('error','❌ Ошибка: '+e.message);
+    area.placeholder='Ошибка генерации. Попробуй ещё раз.';
+  }
+  btn.disabled=false; btn.textContent='🤖 Сгенерировать';
+}
+
+function showAiStatus(type,msg){
+  const el=document.getElementById('aiStatus'); if(!el) return;
+  el.className=`ai-status ${type==='searching'?'ai-s':type==='writing'?'ai-w':'ai-e'}`;
+  el.textContent=msg; el.style.display='block';
+}
+function hideAiStatus(){const el=document.getElementById('aiStatus'); if(el) el.style.display='none'}
+
+function doCopy(){
+  const v=document.getElementById('msgArea')?.value||'';
+  if(!v.trim()){toast('❌ Нет текста'); return}
+  navigator.clipboard.writeText(v); toast('📋 Скопировано!');
+}
+
+// ── SUPABASE OPS ──────────────────────────────────────────────
+async function updateLead(id,updates){
+  updates.updated_at=new Date().toISOString();
+  await sb.from('outreach_leads').update(updates).eq('id',id);
+  const idx=allLeads.findIndex(l=>l.id===id);
+  if(idx>=0) allLeads[idx]={...allLeads[idx],...updates};
+  updateStats();
+}
+
+async function changeStatus(id,status){
+  await updateLead(id,{status}); renderList(); renderDetail(); toast('✅ Статус обновлён');
+}
+
+async function saveNotes(id){
+  const notes=document.getElementById('notesArea')?.value||'';
+  await updateLead(id,{notes}); toast('💾 Заметки сохранены');
+}
+
+async function markSent(id){
+  const l=allLeads.find(x=>x.id===id); if(!l) return;
+  const nt=parseInt(document.getElementById('tSel')?.value)||nextTouch(l);
+  if(!nt){toast('Все касания выполнены'); return}
+  const channel=document.getElementById('chSel')?.value||'email';
+  const msg=document.getElementById('msgArea')?.value||'';
+  if(!msg.trim()){toast('❌ Сначала сгенерируй сообщение'); return}
+  await sb.from('outreach_logs').insert({lead_id:id,touch_number:nt,channel,message_text:msg,sent_at:new Date().toISOString()});
+  const upd={[`touch${nt}_sent_at`]:new Date().toISOString(),[`touch${nt}_channel`]:channel};
+  if(nt===1) upd.status='contacted';
+  await updateLead(id,upd);
+  await loadLogs(); renderList(); renderDetail();
+  toast(`✅ Touch ${nt} сохранён в Supabase!`);
+}
+
+// ── DASHBOARD ────────────────────────────────────────────────
+function renderDash(){
+  const el=document.getElementById('dashLayout');
+  const total=allLeads.length;
+  const sc={};
+  ST_LIST.forEach(s=>sc[s]=allLeads.filter(l=>l.status===s).length);
+  const contacted=total-sc.new, replied=sc.replied+sc.meeting+sc.closed;
+  const rate=contacted>0?Math.round(replied/contacted*100):0;
+  const dueLeads=allLeads.filter(l=>isOverdue(l)&&!['closed','lost'].includes(l.status))
+    .sort((a,b)=>daysLeft(a)-daysLeft(b)).slice(0,12);
+
+  el.innerHTML=`
+  <div class="dash-grid">
+    <div class="dash-card"><div class="dc-val">${total}</div><div class="dc-label">Всего компаний</div></div>
+    <div class="dash-card"><div class="dc-val">${contacted}</div><div class="dc-label">Contacted</div></div>
+    <div class="dash-card"><div class="dc-val" style="color:#F39C12">${replied}</div><div class="dc-label">Replied / Meeting</div></div>
+    <div class="dash-card"><div class="dc-val" style="color:#2ECC71">${sc.closed}</div><div class="dc-label">Closed</div></div>
+    <div class="dash-card"><div class="dc-val" style="color:#4A9EFF">${rate}%</div><div class="dc-label">Reply Rate</div></div>
+    <div class="dash-card"><div class="dc-val" style="color:#E74C3C">${dueLeads.length}</div><div class="dc-label">Follow-up сегодня</div></div>
+  </div>
+  <div style="background:#0F1825;border:1px solid #1E2D45;border-radius:8px;padding:14px;margin-bottom:12px">
+    <div class="section-label" style="margin-top:0">📅 Очередь follow-up</div>
+    ${dueLeads.length===0?`<div style="color:#5A7A9A;text-align:center;padding:20px">✅ Всё отправлено!</div>`:
+    dueLeads.map(l=>`<div class="queue-item">
+      <div>
+        <div style="font-weight:600;font-size:12px">${l.company_name}</div>
+        <div style="font-size:10px;color:#5A7A9A"><span class="badge badge-${l.segment}">${SEG[l.segment]}</span> · Touch ${nextTouch(l)} · ${l.region}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:11px;font-weight:700;color:#E74C3C">${daysLeft(l)<=0?'СЕЙЧАС':'+'+daysLeft(l)+'д'}</div>
+        <button class="btn btn-sec btn-sm" style="margin-top:3px" onclick="switchTab('crm');selectLead('${l.id}')">→ Открыть</button>
+      </div>
+    </div>`).join('')}
+  </div>
+  <div style="background:#0F1825;border:1px solid #1E2D45;border-radius:8px;padding:14px">
+    <div class="section-label" style="margin-top:0">По статусам</div>
+    ${ST_LIST.map(s=>{
+      const cnt=sc[s],pct=total>0?Math.round(cnt/total*100):0;
+      return `<div style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:3px;font-size:12px"><span>${ST_NAME[s]}</span><span style="color:#5A7A9A">${cnt}</span></div>
+        <div style="background:#162034;border-radius:3px;height:3px"><div style="background:#E8B838;height:3px;border-radius:3px;width:${pct}%"></div></div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+// ── LOGS ─────────────────────────────────────────────────────
+function renderLogs(){
+  const el=document.getElementById('logsLayout');
+  if(!allLogs.length){el.innerHTML=`<div style="color:#5A7A9A;text-align:center;padding:40px">Логов пока нет — отправь первое касание!</div>`; return}
+  el.innerHTML=`<div style="font-size:11px;color:#5A7A9A;margin-bottom:12px">${allLogs.length} касаний в истории</div>`+
+  allLogs.map(lg=>{
+    const lead=allLeads.find(l=>l.id===lg.lead_id);
+    return `<div class="log-item">
+      <div class="li-top">
+        <div><b style="font-size:12px">${lead?.company_name||'—'}</b> <span class="li-touch">· Touch ${lg.touch_number} · ${lg.channel}</span></div>
+        <span class="li-date">${new Date(lg.sent_at||lg.created_at).toLocaleDateString('ru')} ${new Date(lg.sent_at||lg.created_at).toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'})}</span>
+      </div>
+      <div class="li-body" onclick="this.classList.toggle('exp')">${(lg.message_text||'').substring(0,250)}${(lg.message_text||'').length>250?'...':''}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── TAB SWITCH ───────────────────────────────────────────────
+function switchTab(tab){
+  currentTab=tab;
+  document.querySelectorAll('.nb').forEach((b,i)=>b.classList.toggle('active',['crm','dashboard','logs'][i]===tab));
+  document.getElementById('crmLayout').style.display=tab==='crm'?'flex':'none';
+  document.getElementById('dashLayout').style.display=tab==='dashboard'?'block':'none';
+  document.getElementById('logsLayout').style.display=tab==='logs'?'block':'none';
+  if(tab==='dashboard') renderDash();
+  if(tab==='logs') renderLogs();
+}
+
+// ── TOAST ────────────────────────────────────────────────────
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.style.display='block';
+  setTimeout(()=>t.style.display='none',2500);
+}
+
+// ── SEED DATA ─────────────────────────────────────────────────
+const COMPANIES=[
+  {name:"Penguins Events",segment:"event",region:"UAE",priority:"A",email:"info@penguins.ae"},
+  {name:"MCI Group UAE",segment:"event",region:"UAE",priority:"A",email:"uae@mci-group.com"},
+  {name:"Done Events",segment:"event",region:"UAE",priority:"A",email:"info@done.ae"},
+  {name:"Uniplan UAE",segment:"event",region:"UAE",priority:"A",email:"dubai@uniplan.com"},
+  {name:"Flash Entertainment",segment:"event",region:"UAE",priority:"A",email:"info@flashentertainment.ae"},
+  {name:"Index Events",segment:"event",region:"UAE",priority:"A",email:"info@indexevents.com"},
+  {name:"AOS Art of Show",segment:"event",region:"UAE",priority:"A",email:"info@artofshow.ae"},
+  {name:"Eventive UAE",segment:"event",region:"UAE",priority:"A",email:"hello@eventive.ae"},
+  {name:"Blink Experience",segment:"event",region:"UAE",priority:"B",email:"hello@blinkexperience.com"},
+  {name:"360 Degrees Events",segment:"event",region:"UAE",priority:"B",email:"info@360events.ae"},
+  {name:"Sparks Events",segment:"event",region:"UAE",priority:"B",email:"info@sparks.ae"},
+  {name:"QNA International",segment:"event",region:"UAE",priority:"B",email:"info@qna-international.com"},
+  {name:"Amber Events",segment:"event",region:"UAE",priority:"B",email:"info@amberevents.ae"},
+  {name:"CREATIVE GROUP UAE",segment:"event",region:"UAE",priority:"B",email:"info@creativegroup.ae"},
+  {name:"Protec UAE",segment:"event",region:"UAE",priority:"A",email:"info@protecgroup.ae"},
+  {name:"Creative Technology UAE",segment:"event",region:"UAE",priority:"A",email:"uae@creativetechnology.com"},
+  {name:"NEP Middle East",segment:"event",region:"UAE",priority:"A",email:"me@nepgroup.com"},
+  {name:"Encore PSAV UAE",segment:"event",region:"UAE",priority:"A",email:"uae@encore-us.com"},
+  {name:"Production Resource Group",segment:"event",region:"UAE",priority:"A",email:"uae@prg.com"},
+  {name:"XL Video Dubai",segment:"event",region:"UAE",priority:"A",email:"dubai@xlvideo.com"},
+  {name:"EXPO City Dubai",segment:"event",region:"UAE",priority:"A",email:"events@expocitydubai.com"},
+  {name:"Emaar Entertainment",segment:"event",region:"UAE",priority:"A",email:"entertainment@emaar.ae"},
+  {name:"Meraas Events",segment:"event",region:"UAE",priority:"A",email:"events@meraas.ae"},
+  {name:"Majid Al Futtaim Events",segment:"event",region:"UAE",priority:"A",email:"events@majidalfuttaim.com"},
+  {name:"Dubai Holding Events",segment:"event",region:"UAE",priority:"A",email:"events@dubaiholding.com"},
+  {name:"DIFC Events",segment:"event",region:"UAE",priority:"A",email:"events@difc.ae"},
+  {name:"FP7 McCann UAE",segment:"event",region:"UAE",priority:"A",email:"info@fp7.ae"},
+  {name:"Leo Burnett UAE",segment:"event",region:"UAE",priority:"B",email:"info@leoburnett.ae"},
+  {name:"BBDO Dubai",segment:"event",region:"UAE",priority:"B",email:"info@bbdo.ae"},
+  {name:"McCann Dubai",segment:"event",region:"UAE",priority:"B",email:"info@mccann.ae"},
+  {name:"Publicis Middle East",segment:"event",region:"UAE",priority:"B",email:"info@publicis.ae"},
+  {name:"ITP Media Group",segment:"event",region:"UAE",priority:"B",email:"info@itp.com"},
+  {name:"Riyadh Exhibitions",segment:"event",region:"Saudi",priority:"A",email:"info@recexpo.com.sa"},
+  {name:"SELA Events",segment:"event",region:"Saudi",priority:"A",email:"info@sela.sa"},
+  {name:"MCN Saudi",segment:"event",region:"Saudi",priority:"A",email:"info@mcnsaudi.com"},
+  {name:"Fiftytwo Events",segment:"event",region:"Saudi",priority:"B",email:"hello@fiftytwo.sa"},
+  {name:"Alpha Events KSA",segment:"event",region:"Saudi",priority:"B",email:"info@alphaevents.sa"},
+  {name:"Saudi Seasons Events",segment:"event",region:"Saudi",priority:"B",email:"events@saudiseasons.sa"},
+  {name:"Pico Global London",segment:"event",region:"Europe",priority:"A",email:"london@pico.com"},
+  {name:"Jack Morton London",segment:"event",region:"Europe",priority:"A",email:"london@jackmorton.com"},
+  {name:"Imagination London",segment:"event",region:"Europe",priority:"A",email:"info@imagination.com"},
+  {name:"GPJ Europe",segment:"event",region:"Europe",priority:"A",email:"europe@gpj.com"},
+  {name:"Wasserman Europe",segment:"event",region:"Europe",priority:"B",email:"info@teamwass.com"},
+  {name:"Havas Events Paris",segment:"event",region:"Europe",priority:"B",email:"events@havas.com"},
+  {name:"Almaty Events Pro",segment:"event",region:"CIS",priority:"B",email:"info@almatyevents.kz"},
+  {name:"Astana Events",segment:"event",region:"CIS",priority:"B",email:"info@astana-events.kz"},
+  {name:"Expo Events KZ",segment:"event",region:"CIS",priority:"B",email:"info@expoevents.kz"},
+  {name:"BMW UAE",segment:"auto",region:"UAE",priority:"A",email:"marketing@bmw.ae"},
+  {name:"Mercedes-Benz UAE",segment:"auto",region:"UAE",priority:"A",email:"marketing@mercedes-benz.ae"},
+  {name:"Lamborghini Dubai",segment:"auto",region:"UAE",priority:"A",email:"dubai@lamborghini.com"},
+  {name:"Rolls Royce Dubai",segment:"auto",region:"UAE",priority:"A",email:"dubai@rolls-roycemotorcars.com"},
+  {name:"Bentley Dubai",segment:"auto",region:"UAE",priority:"A",email:"dubai@bentleymotors.com"},
+  {name:"Ferrari UAE",segment:"auto",region:"UAE",priority:"A",email:"uae@ferrari.com"},
+  {name:"Porsche UAE",segment:"auto",region:"UAE",priority:"A",email:"info@porsche-dubai.com"},
+  {name:"Tesla UAE",segment:"auto",region:"UAE",priority:"A",email:"uae@tesla.com"},
+  {name:"Bugatti Dubai",segment:"auto",region:"UAE",priority:"A",email:"dubai@bugatti.com"},
+  {name:"Audi UAE",segment:"auto",region:"UAE",priority:"A",email:"marketing@audi.ae"},
+  {name:"McLaren Dubai",segment:"auto",region:"UAE",priority:"B",email:"dubai@mclaren.com"},
+  {name:"Maserati Dubai",segment:"auto",region:"UAE",priority:"B",email:"dubai@maserati.com"},
+  {name:"Aston Martin UAE",segment:"auto",region:"UAE",priority:"B",email:"uae@astonmartin.com"},
+  {name:"Land Rover UAE",segment:"auto",region:"UAE",priority:"B",email:"uae@landrover.com"},
+  {name:"Chalhoub Group",segment:"auto",region:"UAE",priority:"A",email:"marketing@chalhoubgroup.com"},
+  {name:"LVMH UAE",segment:"auto",region:"UAE",priority:"A",email:"uae@lvmh.com"},
+  {name:"Rolex UAE",segment:"auto",region:"UAE",priority:"A",email:"uae@rolex.com"},
+  {name:"Richard Mille UAE",segment:"auto",region:"UAE",priority:"A",email:"uae@richardmille.com"},
+  {name:"NEOM Brand UAE",segment:"auto",region:"UAE",priority:"A",email:"brand@neom.com"},
+  {name:"Red Bull UAE",segment:"auto",region:"UAE",priority:"B",email:"uae@redbull.com"},
+  {name:"Yas Marina Circuit",segment:"auto",region:"UAE",priority:"A",email:"info@yasmarinacircuit.com"},
+  {name:"Abu Dhabi Motorsports",segment:"auto",region:"UAE",priority:"A",email:"info@admotorsports.ae"},
+  {name:"Dubai Autodrome",segment:"auto",region:"UAE",priority:"A",email:"info@dubaiautodrome.ae"},
+  {name:"BMW Saudi Arabia",segment:"auto",region:"Saudi",priority:"A",email:"marketing@bmw.sa"},
+  {name:"Mercedes Saudi",segment:"auto",region:"Saudi",priority:"A",email:"marketing@mercedes.sa"},
+  {name:"Lamborghini Riyadh",segment:"auto",region:"Saudi",priority:"A",email:"riyadh@lamborghini.com"},
+  {name:"Ferrari Saudi",segment:"auto",region:"Saudi",priority:"A",email:"saudi@ferrari.com"},
+  {name:"Bentley Riyadh",segment:"auto",region:"Saudi",priority:"A",email:"riyadh@bentleymotors.com"},
+  {name:"Porsche Saudi",segment:"auto",region:"Saudi",priority:"B",email:"saudi@porsche.com"},
+  {name:"The Producers UAE",segment:"prod",region:"UAE",priority:"A",email:"info@theproducers.ae"},
+  {name:"Filmmaster UAE",segment:"prod",region:"UAE",priority:"A",email:"uae@filmmaster.com"},
+  {name:"Plank Productions",segment:"prod",region:"UAE",priority:"A",email:"info@plank.ae"},
+  {name:"Dejavu Production",segment:"prod",region:"UAE",priority:"A",email:"info@dejavu.ae"},
+  {name:"Filmworks Dubai",segment:"prod",region:"UAE",priority:"A",email:"info@filmworks.ae"},
+  {name:"OSN Productions",segment:"prod",region:"UAE",priority:"A",email:"productions@osn.com"},
+  {name:"Image Nation Abu Dhabi",segment:"prod",region:"UAE",priority:"A",email:"info@imagenation.ae"},
+  {name:"twofour54",segment:"prod",region:"UAE",priority:"A",email:"info@twofour54.com"},
+  {name:"Rotana Studios UAE",segment:"prod",region:"UAE",priority:"A",email:"info@rotana.net"},
+  {name:"Egg Films UAE",segment:"prod",region:"UAE",priority:"A",email:"uae@eggfilms.com"},
+  {name:"Lightbulb Film Productions",segment:"prod",region:"UAE",priority:"B",email:"info@lightbulbfilms.ae"},
+  {name:"Stills Motion UAE",segment:"prod",region:"UAE",priority:"B",email:"info@stillsmotion.ae"},
+  {name:"Framestore Dubai",segment:"prod",region:"UAE",priority:"B",email:"dubai@framestore.com"},
+  {name:"MPC Dubai",segment:"prod",region:"UAE",priority:"B",email:"dubai@moving-picture.com"},
+  {name:"Dneg Dubai",segment:"prod",region:"UAE",priority:"B",email:"dubai@dneg.com"},
+  {name:"FUEL Content Dubai",segment:"prod",region:"UAE",priority:"B",email:"info@fuelcontent.ae"},
+  {name:"Bild Studios Dubai",segment:"prod",region:"UAE",priority:"B",email:"info@bildstudios.ae"},
+  {name:"The Gate Films UAE",segment:"prod",region:"UAE",priority:"B",email:"info@gatefilms.ae"},
+  {name:"Telfaz11",segment:"prod",region:"Saudi",priority:"A",email:"info@telfaz11.com"},
+  {name:"MBC Studios",segment:"prod",region:"Saudi",priority:"A",email:"studios@mbc.net"},
+  {name:"Manga Productions",segment:"prod",region:"Saudi",priority:"A",email:"info@manga.sa"},
+  {name:"Saudi Film Commission",segment:"prod",region:"Saudi",priority:"A",email:"info@saudifilms.com"},
+  {name:"Uturn Entertainment",segment:"prod",region:"Saudi",priority:"A",email:"info@uturn.tv"},
+  {name:"SRMG Studios",segment:"prod",region:"Saudi",priority:"A",email:"studios@srmg.com"},
+  {name:"Stink Films London",segment:"prod",region:"Europe",priority:"A",email:"info@stinkfilms.com"},
+  {name:"MJZ London",segment:"prod",region:"Europe",priority:"A",email:"london@mjz.com"},
+  {name:"Ridley Scott Associates",segment:"prod",region:"Europe",priority:"A",email:"info@rsafilms.com"},
+  {name:"Rattling Stick London",segment:"prod",region:"Europe",priority:"A",email:"info@rattlingstick.com"},
+  {name:"Pulse Films London",segment:"prod",region:"Europe",priority:"B",email:"info@pulsefilms.com"},
+  {name:"Somesuch London",segment:"prod",region:"Europe",priority:"B",email:"info@somesuch.co"},
+  {name:"Partizan London",segment:"prod",region:"Europe",priority:"B",email:"london@partizan.com"},
+  {name:"Kazakhfilm",segment:"prod",region:"CIS",priority:"A",email:"info@kazakhfilm.kz"},
+  {name:"QazaqFilm",segment:"prod",region:"CIS",priority:"B",email:"info@qazaqfilm.kz"},
+  {name:"Panorama Studio KZ",segment:"prod",region:"CIS",priority:"B",email:"info@panorama.kz"},
+  {name:"Stereo Film Almaty",segment:"prod",region:"CIS",priority:"B",email:"info@stereofilm.kz"},
+  {name:"88 Production Almaty",segment:"prod",region:"CIS",priority:"B",email:"info@88production.kz"},
+];
+
+async function seedCompanies(){
+  const rows=COMPANIES.map(c=>({company_name:c.name,segment:c.segment,region:c.region,priority:c.priority,contact_email:c.email,status:'new'}));
+  for(let i=0;i<rows.length;i+=50) await sb.from('outreach_leads').insert(rows.slice(i,i+50));
+}
+
+init();
+</script>
 </body>
 </html>
