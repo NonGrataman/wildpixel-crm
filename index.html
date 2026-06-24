@@ -188,7 +188,7 @@ const ST_LIST = ['new','contacted','replied','meeting','closed','lost'];
 const ST_NAME = {new:'New',contacted:'Contacted',replied:'Replied',meeting:'Meeting',closed:'Closed',lost:'Lost'};
 const DELAYS = [0,3,8,15];
 
-let allLeads=[], allLogs=[], filtered=[], selectedId=null, currentTab='crm';
+let allLeads=[], allLogs=[], filtered=[], selectedId=null, currentTab='crm', dashFilter=null;
 
 // ── INIT ─────────────────────────────────────────────────────
 async function init() {
@@ -476,19 +476,61 @@ function renderDash(){
   const rate=contacted>0?Math.round(replied/contacted*100):0;
   const dueLeads=allLeads.filter(l=>isOverdue(l)&&!['closed','lost'].includes(l.status))
     .sort((a,b)=>daysLeft(a)-daysLeft(b)).slice(0,12);
+  const STATUS_COLORS={new:'#5A7A9A',contacted:'#4A9EFF',replied:'#F39C12',meeting:'#9B59B6',closed:'#2ECC71',lost:'#E74C3C'};
+  const filteredByStatus=dashFilter&&dashFilter!=='_due'?allLeads.filter(l=>l.status===dashFilter):[];
 
   el.innerHTML=`
-  <div class="dash-grid">
-    <div class="dash-card"><div class="dc-val">${total}</div><div class="dc-label">Всего компаний</div></div>
-    <div class="dash-card"><div class="dc-val">${contacted}</div><div class="dc-label">Contacted</div></div>
-    <div class="dash-card"><div class="dc-val" style="color:#F39C12">${replied}</div><div class="dc-label">Replied / Meeting</div></div>
-    <div class="dash-card"><div class="dc-val" style="color:#2ECC71">${sc.closed}</div><div class="dc-label">Closed</div></div>
+  <div class="dash-grid" style="margin-bottom:14px">
+    ${ST_LIST.map(s=>`
+    <div class="dash-card" style="cursor:pointer;border:2px solid ${dashFilter===s?STATUS_COLORS[s]:'#1E2D45'};transition:border .15s" onclick="dashFilter=dashFilter==='${s}'?null:'${s}';renderDash()">
+      <div class="dc-val" style="color:${STATUS_COLORS[s]}">${sc[s]}</div>
+      <div class="dc-label">${ST_NAME[s]}</div>
+    </div>`).join('')}
     <div class="dash-card"><div class="dc-val" style="color:#4A9EFF">${rate}%</div><div class="dc-label">Reply Rate</div></div>
-    <div class="dash-card"><div class="dc-val" style="color:#E74C3C">${dueLeads.length}</div><div class="dc-label">Follow-up сегодня</div></div>
+    <div class="dash-card" style="cursor:pointer;border:2px solid ${dashFilter==='_due'?'#E74C3C':'#1E2D45'}" onclick="dashFilter=dashFilter==='_due'?null:'_due';renderDash()">
+      <div class="dc-val" style="color:#E74C3C">${dueLeads.length}</div><div class="dc-label">Follow-up сегодня</div>
+    </div>
   </div>
+
+  ${dashFilter&&dashFilter!=='_due'?`
   <div style="background:#0F1825;border:1px solid #1E2D45;border-radius:8px;padding:14px;margin-bottom:12px">
-    <div class="section-label" style="margin-top:0">📅 Очередь follow-up</div>
-    ${dueLeads.length===0?`<div style="color:#5A7A9A;text-align:center;padding:20px">✅ Всё отправлено!</div>`:
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div style="font-size:12px;font-weight:700;color:${STATUS_COLORS[dashFilter]}">● ${ST_NAME[dashFilter]} — ${filteredByStatus.length} компаний</div>
+      <button class="btn btn-sec btn-sm" onclick="dashFilter=null;renderDash()">✕ Сбросить</button>
+    </div>
+    ${filteredByStatus.length===0?`<div style="color:#5A7A9A;text-align:center;padding:16px">Нет компаний</div>`:
+    filteredByStatus.map(l=>{
+      const logs=allLogs.filter(lg=>lg.lead_id===l.id).sort((a,b)=>new Date(b.sent_at||b.created_at)-new Date(a.sent_at||a.created_at));
+      const last=logs[0];
+      const t=last?new Date(last.sent_at||last.created_at):null;
+      const timeStr=t?t.toLocaleDateString('ru')+' '+t.toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'}):'';
+      return `<div style="padding:10px 0;border-bottom:1px solid #1E2D45">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5px">
+          <div>
+            <span style="font-weight:700;font-size:13px">${l.company_name}</span>
+            <span class="badge badge-${l.segment}" style="margin-left:6px">${SEG[l.segment]}</span>
+            <span style="color:#5A7A9A;font-size:10px;margin-left:4px">${l.region}</span>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
+            <span style="font-size:10px;color:#5A7A9A">${timeStr}</span>
+            <button class="btn btn-sec btn-sm" onclick="switchTab('crm');selectLead('${l.id}')">→</button>
+          </div>
+        </div>
+        ${last?`<div style="font-size:11px;color:#5A7A9A;line-height:1.4">
+          <span style="color:#E8B838;font-weight:600">Touch ${last.touch_number} · ${last.channel}</span>
+          &nbsp;&nbsp;${(last.message_text||'').substring(0,140)}${(last.message_text||'').length>140?'...':''}
+        </div>`:`<div style="font-size:11px;color:#5A7A9A">— касаний не было</div>`}
+      </div>`;
+    }).join('')}
+  </div>`:''}
+
+  ${dashFilter==='_due'?`
+  <div style="background:#0F1825;border:1px solid #1E2D45;border-radius:8px;padding:14px;margin-bottom:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div style="font-size:12px;font-weight:700;color:#E74C3C">🔴 Follow-up сегодня</div>
+      <button class="btn btn-sec btn-sm" onclick="dashFilter=null;renderDash()">✕ Сбросить</button>
+    </div>
+    ${dueLeads.length===0?`<div style="color:#5A7A9A;text-align:center;padding:16px">✅ Всё отправлено!</div>`:
     dueLeads.map(l=>`<div class="queue-item">
       <div>
         <div style="font-weight:600;font-size:12px">${l.company_name}</div>
@@ -496,20 +538,27 @@ function renderDash(){
       </div>
       <div style="text-align:right">
         <div style="font-size:11px;font-weight:700;color:#E74C3C">${daysLeft(l)<=0?'СЕЙЧАС':'+'+daysLeft(l)+'д'}</div>
-        <button class="btn btn-sec btn-sm" style="margin-top:3px" onclick="switchTab('crm');selectLead('${l.id}')">→ Открыть</button>
+        <button class="btn btn-sec btn-sm" style="margin-top:3px" onclick="switchTab('crm');selectLead('${l.id}')">→</button>
       </div>
     </div>`).join('')}
-  </div>
+  </div>`:''}
+
+  ${!dashFilter?`
   <div style="background:#0F1825;border:1px solid #1E2D45;border-radius:8px;padding:14px">
-    <div class="section-label" style="margin-top:0">По статусам</div>
-    ${ST_LIST.map(s=>{
-      const cnt=sc[s],pct=total>0?Math.round(cnt/total*100):0;
-      return `<div style="margin-bottom:10px">
-        <div style="display:flex;justify-content:space-between;margin-bottom:3px;font-size:12px"><span>${ST_NAME[s]}</span><span style="color:#5A7A9A">${cnt}</span></div>
-        <div style="background:#162034;border-radius:3px;height:3px"><div style="background:#E8B838;height:3px;border-radius:3px;width:${pct}%"></div></div>
-      </div>`;
-    }).join('')}
-  </div>`;
+    <div class="section-label" style="margin-top:0">📅 Follow-up очередь</div>
+    ${dueLeads.length===0?`<div style="color:#5A7A9A;text-align:center;padding:16px">✅ Всё отправлено!</div>`:
+    dueLeads.map(l=>`<div class="queue-item">
+      <div>
+        <div style="font-weight:600;font-size:12px">${l.company_name}</div>
+        <div style="font-size:10px;color:#5A7A9A"><span class="badge badge-${l.segment}">${SEG[l.segment]}</span> · Touch ${nextTouch(l)} · ${l.region}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:11px;font-weight:700;color:#E74C3C">${daysLeft(l)<=0?'СЕЙЧАС':'+'+daysLeft(l)+'д'}</div>
+        <button class="btn btn-sec btn-sm" style="margin-top:3px" onclick="switchTab('crm');selectLead('${l.id}')">→</button>
+      </div>
+    </div>`).join('')}
+  </div>`:''}
+  `;
 }
 
 // ── LOGS ─────────────────────────────────────────────────────
