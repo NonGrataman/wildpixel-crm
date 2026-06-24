@@ -13,20 +13,36 @@ export default async function handler(req) {
 
   const body = await req.json();
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  // Convert Anthropic format to OpenRouter format
+  const orBody = {
+    model: 'anthropic/claude-sonnet-4-5',
+    max_tokens: body.max_tokens || 1000,
+    messages: body.messages
+  };
+
+  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': process.env.ANTHROPIC_API_KEY,
-      'anthropic-version': '2023-06-01'
+      'Authorization': 'Bearer ' + process.env.OPENROUTER_API_KEY,
+      'HTTP-Referer': 'https://wildpixel-crm.vercel.app',
+      'X-Title': 'Wild Pixel CRM'
     },
-    body: JSON.stringify(body)
+    body: JSON.stringify(orBody)
   });
 
   const data = await res.json();
 
-  return new Response(JSON.stringify(data), {
-    status: res.status,
+  // Convert OpenRouter response back to Anthropic format
+  const anthropicFormat = {
+    content: [{
+      type: 'text',
+      text: data.choices?.[0]?.message?.content || ''
+    }]
+  };
+
+  return new Response(JSON.stringify(anthropicFormat), {
+    status: 200,
     headers: {
       'Content-Type': 'application/json',
       'Access-Control-Allow-Origin': '*',
