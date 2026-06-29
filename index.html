@@ -19,7 +19,7 @@ body{background:#080E1A;color:#E8EDF5;font-family:system-ui,sans-serif;font-size
 .list-col{width:340px;border-right:1px solid #1E2D45;display:flex;flex-direction:column;flex-shrink:0}
 .filters{padding:10px;border-bottom:1px solid #1E2D45;display:flex;flex-direction:column;gap:6px}
 .fi{background:#162034;border:1px solid #1E2D45;color:#E8EDF5;padding:5px 8px;border-radius:6px;font-size:11px;width:100%}
-.si{background:#162034;border:1px solid #1E2D45;color:#E8EDF5;padding:5px 8px;border-radius:6px;font-size:11px;flex:1}
+.si{background:#162034;border:1px solid #1E2D45;color:#E8EDF5;padding:5px 8px;border-radius:6px;font-size:11px;flex:1}h
 .leads{flex:1;overflow-y:auto}
 .lead-row{padding:10px 12px;border-bottom:1px solid #1E2D45;cursor:pointer;transition:background .1s}
 .lead-row:hover{background:#0F1825}.lead-row.active{background:#162034;border-left:3px solid #E8B838}
@@ -374,31 +374,38 @@ async function generateMsg(leadId){
     prod:`Production House боли: клиенты всё чаще запрашивают virtual production; нет доступной LED Volume студии в UAE — летать в Европу дорого; нужно наращивать портфолио VP проектов; новая технология требует надёжного партнёра с опытом. Wild Pixel решение: единственная full-cycle VP студия в Дубае с LED Volume и командой Unreal Engine, уже сделали feature film, TV shows, commercials.`
   };
 
-  const prompt=`You are Daniil Artyomov, BD Lead at Wild Pixel Studio. Write the outreach message in English.
+  const prompt=`You are Daniil Artyomov, BD Lead at Wild Pixel Studio Dubai. Write a cold outreach message in English.
 
-WILD PIXEL STUDIO (sender):
+ABOUT WILD PIXEL STUDIO (you are writing on behalf of):
 ${WP}
 
-TARGET COMPANY: "${l.company_name}"
-Segment: ${SEG[l.segment]} (${l.segment})
+TARGET COMPANY:
+Name: "${l.company_name}"
+Segment: ${SEG[l.segment]}
 Region: ${l.region}
-Email: ${l.contact_email||'—'}
-${l.notes?`Our notes about them: ${l.notes}`:''}
+Contact email: ${l.contact_email||'—'}
+Internal notes: ${l.notes||'none'}
 
-SEGMENT PAIN POINTS TO ADDRESS:
+THEIR PAIN POINTS (${SEG[l.segment]}):
 ${SEG_PAIN[l.segment]}
 
-TASK: Write ${CH_FORMAT[channel]}
+YOUR TASK:
+Write ${CH_FORMAT[channel]}
 ${TOUCH_GUIDE[touchSel]}
 
-CRITICAL RULES:
-- Make the opening line specific to ${l.company_name} and their segment — show you know who they are
-- Reference a real Wild Pixel case that fits their needs (from the portfolio above)
-- Never be generic, never use corporate filler phrases
-- The reader should feel this was written specifically for them
-- Sign as: Daniil Artyomov | Wild Pixel Studio | wildpixel.tv | +971 52 687 1613
+MANDATORY PERSONALIZATION RULES:
+1. Line 1 must reference something SPECIFIC about ${l.company_name} — their type of work, their market, their likely challenges. Never start generic.
+2. Pick ONE Wild Pixel case from the portfolio that is most relevant to ${l.company_name}'s business and mention it with specific details (numbers, results).
+3. The value proposition must be tied to their specific pain — not generic "virtual production is great".
+4. If Touch 1 — subject line must be specific to ${l.company_name}, not generic like "Partnership Opportunity".
+5. Never use: "I hope this finds you well", "I wanted to reach out", "I came across your company".
 
-Output ONLY the final message text, nothing else. No explanations, no meta-commentary.`;
+SIGN OFF:
+Daniil Artyomov | BD Lead
+Wild Pixel Studio | wildpixel.tv
++971 52 687 1613 | contact@wildpixel.tv
+
+Output ONLY the final message. No meta-commentary, no explanations, no "Here is the message:".`;
 
   try{
     showAiStatus('writing','✍️ Пишу персональное сообщение...');
