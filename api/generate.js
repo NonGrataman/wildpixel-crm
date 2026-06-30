@@ -15,7 +15,6 @@ export default async function handler(req) {
 
   const API_KEY = process.env.OPENROUTER_API_KEY;
 
-  // STEP 1: Research the company via web search
   let companyInfo = '';
   try {
     const searchRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -41,29 +40,49 @@ export default async function handler(req) {
     companyInfo = '';
   }
 
-  // STEP 2: Write the personalized message using research
   const finalPrompt = prompt + (companyInfo ? '\n\nCOMPANY RESEARCH (use these specific facts to personalize):\n' + companyInfo : '');
 
-  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + API_KEY,
-      'HTTP-Referer': 'https://wildpixel-crm.vercel.app',
-      'X-Title': 'Wild Pixel CRM'
-    },
-    body: JSON.stringify({
-      model: 'anthropic/claude-sonnet-4-5',
-      max_tokens: 1000,
-      messages: [{ role: 'user', content: finalPrompt }]
-    })
-  });
+  let messageText = '';
+  let debugInfo = '';
 
-  const data = await res.json();
+  try {
+    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + API_KEY,
+        'HTTP-Referer': 'https://wildpixel-crm.vercel.app',
+        'X-Title': 'Wild Pixel CRM'
+      },
+      body: JSON.stringify({
+        model: 'anthropic/claude-sonnet-4.5',
+        max_tokens: 1200,
+        messages: [{ role: 'user', content: finalPrompt }]
+      })
+    });
+
+    const rawText = await res.text();
+    let data;
+    try {
+      data = JSON.parse(rawText);
+    } catch(parseErr) {
+      debugInfo = 'PARSE_ERROR: ' + rawText.substring(0, 300);
+      data = {};
+    }
+
+    messageText = data.choices?.[0]?.message?.content || '';
+
+    if (!messageText) {
+      debugInfo = debugInfo || ('EMPTY_RESPONSE: ' + JSON.stringify(data).substring(0, 500));
+    }
+  } catch(e) {
+    debugInfo = 'FETCH_ERROR: ' + e.message;
+  }
 
   return new Response(JSON.stringify({
-    content: [{ type: 'text', text: data.choices?.[0]?.message?.content || '' }],
-    research: companyInfo
+    content: [{ type: 'text', text: messageText }],
+    research: companyInfo,
+    debug: debugInfo || undefined
   }), {
     status: 200,
     headers: {
